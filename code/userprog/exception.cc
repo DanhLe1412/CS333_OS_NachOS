@@ -76,7 +76,6 @@ void ExceptionHandler(ExceptionType which)
 			DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
 
 			SysHalt();
-
 			ASSERTNOTREACHED();
 			break;
 
@@ -98,7 +97,13 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 
 			break;
+		case SC_ReadInt:
 
+		case SC_PrintInt:
+		case SC_ReadChar:
+		case SC_PrintChar:
+		case SC_ReadString:
+		case SC_PrintString:
 		default:
 			cerr << "Unexpected system call " << type << "\n";
 			break;
@@ -123,7 +128,7 @@ void ExceptionHandler(ExceptionType which)
 		printf("\nUnaligned reference or one that was beyond the end of the address space.\n");
 		SysHalt();
 		break;
-
+		
 	case OverflowException:
 		printf("\nInteger overflow in add or sub.\n");
 		SysHalt();

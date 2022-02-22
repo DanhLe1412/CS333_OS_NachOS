@@ -35,6 +35,14 @@
 #define SC_ThreadExit   14
 #define SC_ThreadJoin   15
 
+// Systemcall can code
+#define SC_ReadInt		16
+#define SC_PrintInt		17
+#define SC_ReadChar		18
+#define SC_PrintChar		19
+#define SC_ReadString		20
+#define SC_PrintString		21
+
 #define SC_Add		42
 
 #ifndef IN_ASM
@@ -85,6 +93,20 @@ SpaceId ExecV(int argc, char* argv[]);
  * Return the exit status.
  */
 int Join(SpaceId id); 	
+
+void Halt();
+
+int ReadInt();
+
+void PrintInt(int number);
+
+char ReadChar();
+
+void PrintChar(char character);
+
+void ReadString(char buffer[], int length);
+
+void PrintString(char buffer[]);
  
 
 /* File system operations: Create, Remove, Open, Read, Write, Close

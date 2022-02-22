@@ -26,7 +26,7 @@
 #include "syscall.h"
 #include "ksyscall.h"
 
-void InscreasePC()
+void IncreasePC()
 {
 	/* set previous programm counter (debugging only)*/
 	kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
@@ -91,13 +91,29 @@ void ExceptionHandler(ExceptionType which)
 			/* Prepare Result */
 			kernel->machine->WriteRegister(2, (int)result);
 
-			InscreasePC();
+			IncreasePC();
 			return;
 
 			ASSERTNOTREACHED();
 
 			break;
 		case SC_ReadInt:
+			int input;
+
+			DEBUG(dbgSys, "\n SC_ReadInt\n");
+			DEBUG(dbgSys, "Reading an integer from input\n");
+			SynchConsoleInput *sci = new SynchConsoleInput(NULL);
+
+			input = (int)kernel->machine->ReadRegister(4);
+
+			kernel->machine->WriteRegister(2, 0);
+
+			IncreasePC();
+			return;
+
+			ASSERTNOTREACHED();
+
+			break;
 
 		case SC_PrintInt:
 		case SC_ReadChar:
@@ -108,7 +124,7 @@ void ExceptionHandler(ExceptionType which)
 			cerr << "Unexpected system call " << type << "\n";
 			break;
 		}
-		
+
 	case PageFaultException:
 		printf("\nNo valid translation found.\n");
 		SysHalt();
@@ -128,7 +144,7 @@ void ExceptionHandler(ExceptionType which)
 		printf("\nUnaligned reference or one that was beyond the end of the address space.\n");
 		SysHalt();
 		break;
-		
+
 	case OverflowException:
 		printf("\nInteger overflow in add or sub.\n");
 		SysHalt();

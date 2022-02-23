@@ -97,22 +97,80 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 
 			break;
+		// New code from here
 		case SC_ReadInt:
-			int input;
+			int input = 0, last = 0, i = 0, j, m;
+			bool pos = true, isInt = true;
+			char c;
+			char buffer = new char[256];
 
 			DEBUG(dbgSys, "\n SC_ReadInt\n");
-			DEBUG(dbgSys, "Reading an integer from input\n");
+			DEBUG(dbgSys, "Reading an integer from input, please start typing:\n");
+			printf("\n SC_ReadInt\n");
+			printf("Reading an integer from input, please start typing:\n");
+
 			SynchConsoleInput *sci = new SynchConsoleInput(NULL);
+			// Read the input to a buffer.
+			char c = sci->GetChar();
+			while(c != '\n' || c != EOF) {
+				buffer[last++] = c;
+				c = sci->GetChar();
+			}
+			buffer[i] = '\0';
 
-			input = (int)kernel->machine->ReadRegister(4);
+			// Preprocess the buffer
 
-			kernel->machine->WriteRegister(2, 0);
+			if (buffer[0] == '-') {
+				pos = false;
+				i = 1;
+			}
+			
+			m = i;
+			for (i; i < last; i++) {
 
+				if (buffer[i] == '.' || buffer[i] == ',') {
+					j = i + 1;
+					
+					for (j; j < last; j++) {
+						if (buffer[j] != '0') {
+							isInt = false;
+							break;
+						}
+					}
+				}
+
+				if (buffer[0] < '0' || buffer[0] > '9') {	
+					printf("This is not an integer\n");
+					DEBUG(dbgSys, "This is not an integer\n");
+					isInt = false;
+				}
+				
+
+				if (!isInt) {
+					kernel->machine->WriteRegister(2, 0);
+					IncreasePC();
+					delete sci;
+					delete buffer;
+					return;
+				}
+			}
+			
+			for (m; m < last; m++) {
+				input = input * 10 + (int)(buffer[m] - '0');
+			}
+
+			if(!pos)
+				input *= -1;
+
+			// Prepare for return
+			DEBUG(dbgSys, "System has read the integer\n");
+			printf("System has read integer: %d\n", input);
+			kernel->machine->WriteRegister(2, input);
 			IncreasePC();
+			delete sci;
+			delete buffer;
 			return;
-
 			ASSERTNOTREACHED();
-
 			break;
 
 		case SC_PrintInt:

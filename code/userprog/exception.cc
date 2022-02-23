@@ -116,7 +116,7 @@ void ExceptionHandler(ExceptionType which)
 				buffer[last++] = c;
 				c = sci->GetChar();
 			}
-			buffer[i] = '\0';
+			buffer[last] = '\0';
 
 			// Preprocess the buffer
 

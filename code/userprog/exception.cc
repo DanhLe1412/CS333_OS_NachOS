@@ -26,6 +26,7 @@
 #include "syscall.h"
 #include "ksyscall.h"
 #include "synchconsole.h"
+#include <stdlib.h>
 
 void IncreasePC()
 {
@@ -121,7 +122,6 @@ void ExceptionHandler(ExceptionType which)
 			buffer[last] = '\0';
 
 			// Preprocess the buffer
-
 			if (buffer[0] == '-') {
 				pos = false;
 				i = 1;
@@ -130,24 +130,12 @@ void ExceptionHandler(ExceptionType which)
 			m = i;
 			for (i; i < last; i++) {
 
-				if (buffer[i] == '.' || buffer[i] == ',') {
-					j = i + 1;
-					
-					for (j; j < last; j++) {
-						if (buffer[j] != '0') {
-							isInt = false;
-							break;
-						}
-					}
-				}
-
 				if (buffer[0] < '0' || buffer[0] > '9') {	
 					printf("This is not an integer\n");
 					DEBUG(dbgSys, "This is not an integer\n");
 					isInt = false;
 				}
 				
-
 				if (!isInt) {
 					kernel->machine->WriteRegister(2, 0);
 					IncreasePC();
@@ -176,6 +164,46 @@ void ExceptionHandler(ExceptionType which)
 			break;
 */
 		case SC_PrintInt:
+			DEBUG(dbgSys, "\n SC_PrintInt\n");
+			DEBUG(dbgSys, "Printing an integer\n");
+			printf("\n SC_PrintInt\n");
+			printf("Printing an integer.\n");
+
+			SynchConsoleOutput *sco = new SynchConsoleOutput(NULL);
+			int output = kernel->machine->ReadRegister(4);
+
+			if (output == 0) {
+				sco->PutChar('0');
+				IncreasePC();
+				delete sco;
+				return;
+			}
+
+			if (output < 0) 
+				sco->PutChar('-');	
+			output = abs(output);
+			int temp;
+			while(output > 0) {
+				temp = output % 10;
+				output /= 10;
+				sco->PutChar((char)(temp + '0'))
+			}
+			IncreasePC();
+			delete sco;
+			return;
+			ASSERTNOTREACHED();
+			break;
+		case SC_RandomNum:
+			DEBUG(dbgSys, "\n SC_RandomNum\n");
+			DEBUG(dbgSys, "Generate a random positive integer\n");
+			printf("\n SC_RandomNum\n");
+			printf("Generate a random positive integer\n");
+			int r = random();
+			kernel->machine->WriteRegister(2, r);
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+			break;
 		case SC_ReadChar:
 			SynchConsoleInput* synchConsoleInput = new SynchConsoleInput(NULL);
 

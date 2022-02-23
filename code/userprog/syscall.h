@@ -37,15 +37,14 @@
 
 // Systemcall can code
 
-
 #define SC_Add 42
-#define SC_ReadInt		43
-#define SC_PrintInt		44
+#define SC_ReadInt 43
+#define SC_PrintInt 44
 #define SC_ReadChar 45
 #define SC_PrintChar 46
 #define SC_ReadString 47
 #define SC_PrintString 48
-#define SC_RandomInt        22
+#define SC_RandomNum 22
 
 #ifndef IN_ASM
 

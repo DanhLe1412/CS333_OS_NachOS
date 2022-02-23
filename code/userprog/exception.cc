@@ -231,8 +231,36 @@ void ExceptionHandler(ExceptionType which)
 		}
 		break;
 		case SC_PrintChar:
+		{
+			char c = (char)kernel->machine->ReadRegister(4);
+			SynchConsoleOutput *synchConsoleOutput = new SynchConsoleOutput(NULL);
+			if(c >= '!' && c <= '~') // only considering displayable ASCII characters
+			{
+				DEBUG(dbgSys, "Received character \'" << c << "\' as the first parameter.\n");
+				synchConsoleOutput->PutChar(c);
+				synchConsoleOutput->PutChar('\n');
+			}
+			else {
+				DEBUG(dbgSys, "Received a non-displayable character as the first parameter\n");
+				synchConsoleOutput->PutChar('\0');
+				synchConsoleOutput->PutChar('\n');
+			}
+			delete synchConsoleOutput;
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
 		case SC_ReadString:
+		{
+
+		}
+		break;
 		case SC_PrintString:
+		{
+
+		}
+		break;
 		default:
 			cerr << "Unexpected system call " << type << "\n";
 			break;

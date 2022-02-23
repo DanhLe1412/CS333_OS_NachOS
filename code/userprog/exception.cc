@@ -25,6 +25,7 @@
 #include "main.h"
 #include "syscall.h"
 #include "ksyscall.h"
+#include "synchconsole.h"
 
 void IncreasePC()
 {
@@ -98,11 +99,12 @@ void ExceptionHandler(ExceptionType which)
 
 			break;
 		// New code from here
+		/*
 		case SC_ReadInt:
 			int input = 0, last = 0, i = 0, j, m;
 			bool pos = true, isInt = true;
 			char c;
-			char buffer = new char[256];
+			char* buffer = new char[256];
 
 			DEBUG(dbgSys, "\n SC_ReadInt\n");
 			DEBUG(dbgSys, "Reading an integer from input, please start typing:\n");
@@ -111,8 +113,8 @@ void ExceptionHandler(ExceptionType which)
 
 			SynchConsoleInput *sci = new SynchConsoleInput(NULL);
 			// Read the input to a buffer.
-			char c = sci->GetChar();
-			while(c != '\n' || c != EOF) {
+			c = sci->GetChar();
+			while(c != '\n' && c != EOF) {
 				buffer[last++] = c;
 				c = sci->GetChar();
 			}
@@ -172,9 +174,28 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
-
+*/
 		case SC_PrintInt:
 		case SC_ReadChar:
+			SynchConsoleInput* synchConsoleInput = new SynchConsoleInput(NULL);
+
+			char c = synchConsoleInput->GetChar();
+			if(c >= '!' && c <= '~') // only considering displayable ASCII characters
+			{
+				DEBUG(dbgSys, "The system read: \'" << c << "\' from the console.\n");
+				kernel->machine->WriteRegister(2, (char)c);
+			}
+			else {
+				DEBUG(dbgSys, "Not a displayable character!");
+				kernel->machine->WriteRegister(2, (char)'\0');
+			}
+
+			delete syncConsoleInput;
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+
+			break;
 		case SC_PrintChar:
 		case SC_ReadString:
 		case SC_PrintString:

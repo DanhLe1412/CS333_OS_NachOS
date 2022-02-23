@@ -25,6 +25,7 @@
 #include "main.h"
 #include "syscall.h"
 #include "ksyscall.h"
+#include <stdlib.h>
 
 void IncreasePC()
 {
@@ -199,6 +200,17 @@ void ExceptionHandler(ExceptionType which)
 			}
 			IncreasePC();
 			delete sco;
+			return;
+			ASSERTNOTREACHED();
+			break;
+		case SC_RandomNum:
+			DEBUG(dbgSys, "\n SC_RandomNum\n");
+			DEBUG(dbgSys, "Generate a random positive integer\n");
+			printf("\n SC_RandomNum\n");
+			printf("Generate a random positive integer\n");
+			int r = random();
+			kernel->machine->WriteRegister(2, r);
+			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
 			break;

@@ -42,6 +42,7 @@
 #define SC_PrintChar		19
 #define SC_ReadString		20
 #define SC_PrintString		21
+#define SC_RandomInt        22
 
 #define SC_Add		42
 
@@ -99,6 +100,8 @@ void Halt();
 int ReadInt();
 
 void PrintInt(int number);
+
+int RandomNum();
 
 char ReadChar();
 

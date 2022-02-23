@@ -112,8 +112,8 @@ void ExceptionHandler(ExceptionType which)
 
 			SynchConsoleInput *sci = new SynchConsoleInput(NULL);
 			// Read the input to a buffer.
-			char c = sci->GetChar();
-			while(c != '\n' || c != EOF) {
+			c = sci->GetChar();
+			while(c != '\n' && c != EOF) {
 				buffer[last++] = c;
 				c = sci->GetChar();
 			}
@@ -128,24 +128,12 @@ void ExceptionHandler(ExceptionType which)
 			m = i;
 			for (i; i < last; i++) {
 
-				if (buffer[i] == '.' || buffer[i] == ',') {
-					j = i + 1;
-					
-					for (j; j < last; j++) {
-						if (buffer[j] != '0') {
-							isInt = false;
-							break;
-						}
-					}
-				}
-
 				if (buffer[0] < '0' || buffer[0] > '9') {	
 					printf("This is not an integer\n");
 					DEBUG(dbgSys, "This is not an integer\n");
 					isInt = false;
 				}
 				
-
 				if (!isInt) {
 					kernel->machine->WriteRegister(2, 0);
 					IncreasePC();

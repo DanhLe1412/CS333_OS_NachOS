@@ -119,7 +119,6 @@ void ExceptionHandler(ExceptionType which)
 			buffer[last] = '\0';
 
 			// Preprocess the buffer
-
 			if (buffer[0] == '-') {
 				pos = false;
 				i = 1;
@@ -174,6 +173,35 @@ void ExceptionHandler(ExceptionType which)
 			break;
 
 		case SC_PrintInt:
+			DEBUG(dbgSys, "\n SC_PrintInt\n");
+			DEBUG(dbgSys, "Printing an integer\n");
+			printf("\n SC_PrintInt\n");
+			printf("Printing an integer.\n");
+
+			SynchConsoleOutput *sco = new SynchConsoleOutput(NULL);
+			int output = kernel->machine->ReadRegister(4);
+
+			if (output == 0) {
+				sco->PutChar('0');
+				IncreasePC();
+				delete sco;
+				return;
+			}
+
+			if (output < 0) 
+				sco->PutChar('-');	
+			output = abs(output);
+			int temp;
+			while(output > 0) {
+				temp = output % 10;
+				output /= 10;
+				sco->PutChar((char)(temp + '0'))
+			}
+			IncreasePC();
+			delete sco;
+			return;
+			ASSERTNOTREACHED();
+			break;
 		case SC_ReadChar:
 		case SC_PrintChar:
 		case SC_ReadString:

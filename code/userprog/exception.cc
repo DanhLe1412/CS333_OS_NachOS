@@ -126,16 +126,16 @@ void ExceptionHandler(ExceptionType which)
 				pos = false;
 				i = 1;
 			}
-			
+
 			m = i;
 			for (i; i < last; i++) {
 
-				if (buffer[0] < '0' || buffer[0] > '9') {	
+				if (buffer[0] < '0' || buffer[0] > '9') {
 					printf("This is not an integer\n");
 					DEBUG(dbgSys, "This is not an integer\n");
 					isInt = false;
 				}
-				
+
 				if (!isInt) {
 					kernel->machine->WriteRegister(2, 0);
 					IncreasePC();
@@ -144,7 +144,7 @@ void ExceptionHandler(ExceptionType which)
 					return;
 				}
 			}
-			
+
 			for (m; m < last; m++) {
 				input = input * 10 + (int)(buffer[m] - '0');
 			}
@@ -162,7 +162,7 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
-*/
+
 		case SC_PrintInt:
 			DEBUG(dbgSys, "\n SC_PrintInt\n");
 			DEBUG(dbgSys, "Printing an integer\n");
@@ -172,27 +172,30 @@ void ExceptionHandler(ExceptionType which)
 			SynchConsoleOutput *sco = new SynchConsoleOutput(NULL);
 			int output = kernel->machine->ReadRegister(4);
 
-			if (output == 0) {
+			if (output == 0)
+			{
 				sco->PutChar('0');
 				IncreasePC();
 				delete sco;
 				return;
 			}
 
-			if (output < 0) 
-				sco->PutChar('-');	
+			if (output < 0)
+				sco->PutChar('-');
 			output = abs(output);
 			int temp;
-			while(output > 0) {
+			while (output > 0)
+			{
 				temp = output % 10;
 				output /= 10;
-				sco->PutChar((char)(temp + '0'))
+				sco->PutChar((char)(temp + '0'));
 			}
 			IncreasePC();
 			delete sco;
 			return;
 			ASSERTNOTREACHED();
 			break;
+
 		case SC_RandomNum:
 			DEBUG(dbgSys, "\n SC_RandomNum\n");
 			DEBUG(dbgSys, "Generate a random positive integer\n");
@@ -204,26 +207,29 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
+			*/
 		case SC_ReadChar:
-			SynchConsoleInput* synchConsoleInput = new SynchConsoleInput(NULL);
+		{
+			SynchConsoleInput *synchConsoleInput = new SynchConsoleInput(NULL);
 
 			char c = synchConsoleInput->GetChar();
-			if(c >= '!' && c <= '~') // only considering displayable ASCII characters
+			if (c >= '!' && c <= '~') // only considering displayable ASCII characters
 			{
 				DEBUG(dbgSys, "The system read: \'" << c << "\' from the console.\n");
 				kernel->machine->WriteRegister(2, (char)c);
 			}
-			else {
+			else
+			{
 				DEBUG(dbgSys, "Not a displayable character!");
 				kernel->machine->WriteRegister(2, (char)'\0');
 			}
 
-			delete syncConsoleInput;
+			delete synchConsoleInput;
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
-
-			break;
+		}
+		break;
 		case SC_PrintChar:
 		case SC_ReadString:
 		case SC_PrintString:

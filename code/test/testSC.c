@@ -5,7 +5,7 @@
 int main()
 {
     // enter your testing code from here
-    PrintChar('\n');
+    int a = ReadNum();
     Halt();
     // end of testing code
 }

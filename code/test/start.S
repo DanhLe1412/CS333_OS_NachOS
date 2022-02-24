@@ -66,6 +66,22 @@ ReadNum:
 	j 	$31
 	.end ReadNum
 
+	.globl PrintNum
+	.ent	PrintNum
+PrintNum:
+	addiu $2,$0,SC_PrintNum
+	syscall
+	j 	$31
+	.end PrintNum
+
+	.globl RandomNum
+	.ent	RandomNum
+RandomNum:
+	addiu $2,$0,SC_RandomNum
+	syscall
+	j 	$31
+	.end RandomNum
+
 	.globl ReadChar
 	.ent	ReadChar
 ReadChar:

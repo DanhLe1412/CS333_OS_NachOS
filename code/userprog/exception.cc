@@ -162,52 +162,55 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
-
-		case SC_PrintInt:
-			DEBUG(dbgSys, "\n SC_PrintInt\n");
-			DEBUG(dbgSys, "Printing an integer\n");
+		*/
+		case SC_PrintNum:
+		{
 			printf("\n SC_PrintInt\n");
 			printf("Printing an integer.\n");
 
-			SynchConsoleOutput *sco = new SynchConsoleOutput(NULL);
 			int output = kernel->machine->ReadRegister(4);
 
 			if (output == 0)
 			{
-				sco->PutChar('0');
+				kernel->synchConsoleOut->PutChar('0');
 				IncreasePC();
-				delete sco;
 				return;
 			}
 
 			if (output < 0)
-				sco->PutChar('-');
+				kernel->synchConsoleOut->PutChar('-');
 			output = abs(output);
 			int temp;
+			char *buf = new char[12];
+			int counter = 0;
 			while (output > 0)
 			{
 				temp = output % 10;
 				output /= 10;
-				sco->PutChar((char)(temp + '0'));
+				buf[counter] = (char)(temp + '0');
+				counter++;
 			}
+			while (counter >= 0)
+				kernel->synchConsoleOut->PutChar((char)buf[--counter]);
+			printf("\n");
 			IncreasePC();
-			delete sco;
+			delete buf;
 			return;
 			ASSERTNOTREACHED();
-			break;
-
+		}
+		break;
 		case SC_RandomNum:
-			DEBUG(dbgSys, "\n SC_RandomNum\n");
-			DEBUG(dbgSys, "Generate a random positive integer\n");
+		{
 			printf("\n SC_RandomNum\n");
 			printf("Generate a random positive integer\n");
+			srandom(time(NULL));
 			int r = random();
 			kernel->machine->WriteRegister(2, r);
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
-			break;
-			*/
+		}
+		break;
 		case SC_ReadNum:
 		{
 			int sz = 0, sta = 0;
@@ -308,7 +311,6 @@ void ExceptionHandler(ExceptionType which)
 		break;
 		case SC_ReadString:
 		{
-			
 		}
 		break;
 		case SC_PrintString:

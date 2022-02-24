@@ -38,8 +38,8 @@
 // Systemcall can code
 
 #define SC_Add 42
-#define SC_ReadInt 43
-#define SC_PrintInt 44
+#define SC_ReadNum 43
+#define SC_PrintNum 44
 #define SC_ReadChar 45
 #define SC_PrintChar 46
 #define SC_ReadString 47
@@ -96,9 +96,9 @@ int Join(SpaceId id);
 
 void Halt();
 
-int ReadInt();
+int ReadNum();
 
-void PrintInt(int number);
+void PrintNum(int number);
 
 int RandomNum();
 
@@ -128,8 +128,8 @@ typedef int OpenFileId;
  * the console device.
  */
 
-#define ConsoleInput 0
-#define ConsoleOutput 1
+#define ConsoleIn 0
+#define ConsoleOut 1
 
 /* Create a Nachos file, with name "name" */
 /* Note: Create does not open the file.   */

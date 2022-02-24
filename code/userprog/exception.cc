@@ -126,16 +126,16 @@ void ExceptionHandler(ExceptionType which)
 				pos = false;
 				i = 1;
 			}
-			
+
 			m = i;
 			for (i; i < last; i++) {
 
-				if (buffer[0] < '0' || buffer[0] > '9') {	
+				if (buffer[0] < '0' || buffer[0] > '9') {
 					printf("This is not an integer\n");
 					DEBUG(dbgSys, "This is not an integer\n");
 					isInt = false;
 				}
-				
+
 				if (!isInt) {
 					kernel->machine->WriteRegister(2, 0);
 					IncreasePC();
@@ -144,7 +144,7 @@ void ExceptionHandler(ExceptionType which)
 					return;
 				}
 			}
-			
+
 			for (m; m < last; m++) {
 				input = input * 10 + (int)(buffer[m] - '0');
 			}
@@ -162,7 +162,7 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
-*/
+
 		case SC_PrintInt:
 			DEBUG(dbgSys, "\n SC_PrintInt\n");
 			DEBUG(dbgSys, "Printing an integer\n");
@@ -172,27 +172,30 @@ void ExceptionHandler(ExceptionType which)
 			SynchConsoleOutput *sco = new SynchConsoleOutput(NULL);
 			int output = kernel->machine->ReadRegister(4);
 
-			if (output == 0) {
+			if (output == 0)
+			{
 				sco->PutChar('0');
 				IncreasePC();
 				delete sco;
 				return;
 			}
 
-			if (output < 0) 
-				sco->PutChar('-');	
+			if (output < 0)
+				sco->PutChar('-');
 			output = abs(output);
 			int temp;
-			while(output > 0) {
+			while (output > 0)
+			{
 				temp = output % 10;
 				output /= 10;
-				sco->PutChar((char)(temp + '0'))
+				sco->PutChar((char)(temp + '0'));
 			}
 			IncreasePC();
 			delete sco;
 			return;
 			ASSERTNOTREACHED();
 			break;
+
 		case SC_RandomNum:
 			DEBUG(dbgSys, "\n SC_RandomNum\n");
 			DEBUG(dbgSys, "Generate a random positive integer\n");
@@ -204,29 +207,114 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
-		case SC_ReadChar:
-			SynchConsoleInput* synchConsoleInput = new SynchConsoleInput(NULL);
+			*/
+		case SC_ReadNum:
+		{
+			int sz = 0, sta = 0;
+			bool isNum = true;
+			char str[13]; // maximum length of an integer is 9, +2 for the terminating null and the sign
 
-			char c = synchConsoleInput->GetChar();
-			if(c >= '!' && c <= '~') // only considering displayable ASCII characters
+			char c = (char)kernel->synchConsoleIn->GetChar();
+			while (c != '\n')
+			{
+				str[sz++] = c;
+				if (sz > 11)
+				{
+					isNum = false;
+					DEBUG(dbgSys, "Integer overflow\n");
+					break;
+				}
+				c = (char)kernel->synchConsoleIn->GetChar();
+			}
+			str[sz] = '\0';
+
+			if (str[0] == '-')
+				sta++;
+
+			// check valid all-number string
+			for (int i = sta; i < sz; i++)
+				if (!(str[i] >= '0' && str[i] <= '9'))
+				{
+					isNum = false;
+					break;
+				}
+
+			if (isNum)
+			{
+				long num = 0; // long, not int, a number with 9 digits can still cause integer overflow, long long will help containing the value
+				for (int i = sta; i < sz; i++)
+					num = num * 10 + (long)(str[i] - '0');
+				if (sta == 1)
+					num = -num;
+
+				if (num >= (long)(-2147483648) && num <= (long)(2147483647)) // the value is in the integer range in C
+				{
+					DEBUG(dbgSys, "Received a number: " << num << endl);
+				}
+				else
+				{
+					DEBUG(dbgSys, "Integer overflow\n");
+					num = 0;
+				}
+				kernel->machine->WriteRegister(2, (int)num);
+			}
+			else
+			{
+				DEBUG(dbgSys, "Not a valid number.\n");
+				kernel->machine->WriteRegister(2, 0);
+			}
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+		case SC_ReadChar:
+		{
+			char c = (char)kernel->synchConsoleIn->GetChar();
+			if (c >= '!' && c <= '~') // only considering displayable ASCII characters
 			{
 				DEBUG(dbgSys, "The system read: \'" << c << "\' from the console.\n");
 				kernel->machine->WriteRegister(2, (char)c);
 			}
-			else {
+			else
+			{
 				DEBUG(dbgSys, "Not a displayable character!");
 				kernel->machine->WriteRegister(2, (char)'\0');
 			}
 
-			delete syncConsoleInput;
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
-
-			break;
+		}
+		break;
 		case SC_PrintChar:
+		{
+			char c = (char)kernel->machine->ReadRegister(4);
+			if (c >= '!' && c <= '~') // only considering displayable ASCII characters
+			{
+				DEBUG(dbgSys, "Received character \'" << c << "\' as the first parameter.\n");
+				kernel->synchConsoleOut->PutChar(c);
+			}
+			else
+			{
+				DEBUG(dbgSys, "Received a non-displayable character as the first parameter\n");
+				kernel->synchConsoleOut->PutChar('\0');
+			}
+			kernel->synchConsoleOut->PutChar('\n');
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
 		case SC_ReadString:
+		{
+			
+		}
+		break;
 		case SC_PrintString:
+		{
+		}
+		break;
 		default:
 			cerr << "Unexpected system call " << type << "\n";
 			break;

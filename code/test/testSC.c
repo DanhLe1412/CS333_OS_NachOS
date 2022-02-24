@@ -5,8 +5,7 @@
 int main()
 {
     // enter your testing code from here
-    char c;
-    c = ReadChar();
+    int a = ReadNum();
     Halt();
     // end of testing code
 }

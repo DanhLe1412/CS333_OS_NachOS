@@ -153,9 +153,6 @@ void ExceptionHandler(ExceptionType which)
 		// New code starts from here
 		case SC_PrintNum:
 		{
-			printf("\n SC_PrintInt\n");
-			printf("Printing an integer.\n");
-
 			int output = kernel->machine->ReadRegister(4);
 
 			if (output == 0) // If the integer is 0, simply output 0.
@@ -180,7 +177,6 @@ void ExceptionHandler(ExceptionType which)
 			}
 			while (counter >= 0)
 				kernel->synchConsoleOut->PutChar((char)buf[--counter]); // Simply output from the end of the buffer (from the largest digit)
-			printf("\n");
 			IncreasePC();
 			delete buf;
 			return;
@@ -281,7 +277,7 @@ void ExceptionHandler(ExceptionType which)
 		case SC_PrintChar:
 		{
 			char c = (char)kernel->machine->ReadRegister(4);
-			if (c >= '!' && c <= '~') // only considering displayable ASCII characters
+			if (c >= ' ' && c <= '~') // only considering displayable ASCII characters
 			{
 				DEBUG(dbgSys, "Received character \'" << c << "\' as the first parameter.\n");
 				kernel->synchConsoleOut->PutChar(c);
@@ -291,7 +287,7 @@ void ExceptionHandler(ExceptionType which)
 				DEBUG(dbgSys, "Received a non-displayable character as the first parameter\n");
 				kernel->synchConsoleOut->PutChar('\0');
 			}
-			kernel->synchConsoleOut->PutChar('\n');
+			// kernel->synchConsoleOut->PutChar('\n');
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
@@ -305,10 +301,7 @@ void ExceptionHandler(ExceptionType which)
 			{
 				DEBUG(dbgSys, "Invalid Parameter!\n");
 			}
-			char *buffer = new char[len + 1];
-			for (int i = 0; i <= len; i++)
-				buffer[i] = 0;
-
+			char* buffer = User2System(virtualAddr, len+1);
 			int pos = 0;
 			char c = (char)kernel->synchConsoleIn->GetChar();
 			while (c != '\n' && c != '\0' && pos < len)
@@ -332,7 +325,6 @@ void ExceptionHandler(ExceptionType which)
 		{
 			// get string address from r4
 			int strAddr = (int)kernel->machine->ReadRegister(4);
-
 			// get the string from User memory space to System memory space
 			char *buffer = User2System(strAddr, 255);
 
@@ -344,7 +336,7 @@ void ExceptionHandler(ExceptionType which)
 					kernel->synchConsoleOut->PutChar(buffer[pos]);
 					pos++;
 				}
-				kernel->synchConsoleOut->PutChar('\n');
+				// kernel->synchConsoleOut->PutChar(end);
 			}
 			else {
 				DEBUG(dbgSys, "Error locating the string from user.\n");

@@ -170,20 +170,20 @@ void ExceptionHandler(ExceptionType which)
 
 			int output = kernel->machine->ReadRegister(4);
 
-			if (output == 0)
+			if (output == 0) // If the integer is 0, simply output 0.
 			{
 				kernel->synchConsoleOut->PutChar('0');
 				IncreasePC();
 				return;
 			}
 
-			if (output < 0)
+			if (output < 0) // If the integer is negative, add a '-' sign
 				kernel->synchConsoleOut->PutChar('-');
-			output = abs(output);
+			output = abs(output); // Make sure the integer is now positive
 			int temp;
 			char *buf = new char[12];
 			int counter = 0;
-			while (output > 0)
+			while (output > 0) // We store the integer starting from the lowest digit
 			{
 				temp = output % 10;
 				output /= 10;
@@ -191,7 +191,7 @@ void ExceptionHandler(ExceptionType which)
 				counter++;
 			}
 			while (counter >= 0)
-				kernel->synchConsoleOut->PutChar((char)buf[--counter]);
+				kernel->synchConsoleOut->PutChar((char)buf[--counter]); // Simply output from the end of the buffer (from the largest digit)
 			printf("\n");
 			IncreasePC();
 			delete buf;
@@ -203,8 +203,8 @@ void ExceptionHandler(ExceptionType which)
 		{
 			printf("\n SC_RandomNum\n");
 			printf("Generate a random positive integer\n");
-			srandom(time(NULL));
-			int r = random();
+			srandom(time(NULL)); // Set random seed
+			int r = random(); // Generate a random number
 			kernel->machine->WriteRegister(2, r);
 			IncreasePC();
 			return;
@@ -221,7 +221,7 @@ void ExceptionHandler(ExceptionType which)
 			while (c != '\n')
 			{
 				str[sz++] = c;
-				if (sz > 11)
+				if (sz > 11) // If there are over 11 characters in the input, then it is overflowed
 				{
 					isNum = false;
 					DEBUG(dbgSys, "Integer overflow\n");
@@ -229,14 +229,14 @@ void ExceptionHandler(ExceptionType which)
 				}
 				c = (char)kernel->synchConsoleIn->GetChar();
 			}
-			str[sz] = '\0';
+			str[sz] = '\0'; // Terminating null
 
-			if (str[0] == '-')
-				sta++;
+			if (str[0] == '-') // Check if the user enter a negative integer
+				sta++; // The integer start from index 1
 
 			// check valid all-number string
 			for (int i = sta; i < sz; i++)
-				if (!(str[i] >= '0' && str[i] <= '9'))
+				if (!(str[i] >= '0' && str[i] <= '9')) // If the input contains characters other than numbers, break
 				{
 					isNum = false;
 					break;

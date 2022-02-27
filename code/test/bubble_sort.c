@@ -5,13 +5,13 @@
 
 void bubble_sort(int *arr, int size, int type)
 {
-
-    for (int step = 0; step < size - 1; ++step)
+    int step;
+    for (step = 0; step < size - 1; ++step)
     {
 
         int swapped = 0;
-
-        for (int i = 0; i < size - step - 1; ++i)
+        int i;
+        for (i = 0; i < size - step - 1; ++i)
         {
 
             if (type == isAscending)
@@ -40,42 +40,35 @@ void bubble_sort(int *arr, int size, int type)
     }
 }
 
-void printarr(int arr[], int size)
-{
-    // printf("arr: \n");
-    int i;
-    for (i = 0; i < size; i++)
-        PrintNum(arr[i]);
-    // printf("\n");
-}
 
 int main()
 {
-    int n = 101;
+    int n = 101,i;
+    int type;
+    int arr[100];
     while (n > 100 || n < 0)
     {
-        // printf("Input size(0<n<=100): ");
+        PrintString("Input size(0<n<=100): ");
         n = ReadNum();
     }
-    int type;
-    // printf("Type sorting (1:ascending, 0:descending): ");
+    
+    PrintString("Type sorting (1 for ascending, other input is descending): ");
     type = ReadNum();
-    int *arr = (int *)malloc(n * sizeof(int));
-    if (arr == NULL)
-    {
-        // printf("Memory not allocated.\n");
-        exit(0);
-    }
+    
 
-    for (int i = 0; i < n; i++)
+    for (i = 0; i < n; i++)
     {
         int tmp;
-        // printf("input: ");
+        PrintString("input: ");
         tmp = ReadNum();
         arr[i] = tmp;
     }
 
     bubble_sort(arr, n, type);
-    printarr(arr, n);
+    for (i = 0; i < n; i++){
+        PrintNum(arr[i]);
+        PrintChar(' ');
+    }
+    PrintString("\n");
     Halt();
 }

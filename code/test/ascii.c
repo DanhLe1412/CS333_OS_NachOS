@@ -1,10 +1,13 @@
-#include"stdio.h"
-#define START_ASCII 32 
-#define END_ASCII 126
-int main(){
 
-    for(int i = START_ASCII; i <= END_ASCII; i++){
-        char tmp = (char)i;
-        printf("%c %d\n", tmp, i);
+#include "syscall.h"
+
+int main(){
+    int i;
+    for(i=32; i<127; i++){
+        PrintNum(i);
+        PrintChar(' ');
+        PrintChar((char)i);
+        PrintString("\n");
     }
+    Halt();
 }

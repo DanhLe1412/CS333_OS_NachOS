@@ -40,6 +40,57 @@ void IncreasePC()
 	kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
 }
 
+/*
+Input: - User space address (int)
+ - Limit of buffer (int)
+Output:- Buffer (char*)
+Purpose: Copy buffer from User memory space to System memory space
+*/
+char *User2System(int virtAddr, int limit)
+{
+	int i; // index
+	int oneChar;
+	char *kernelBuf = NULL;
+
+	kernelBuf = new char[limit + 1]; // need for terminal string
+	if (kernelBuf == NULL)
+		return kernelBuf;
+	memset(kernelBuf, 0, limit + 1);
+
+	for (i = 0; i < limit; i++)
+	{
+		kernel->machine->ReadMem(virtAddr + i, 1, &oneChar);
+		kernelBuf[i] = (char)oneChar;
+		if (oneChar == 0)
+			break;
+	}
+	return kernelBuf;
+}
+
+/*
+Input: - User space address (int)
+ - Limit of buffer (int)
+ - Buffer (char[])
+Output:- Number of bytes copied (int)
+Purpose: Copy buffer from System memory space to User memory space
+*/
+int System2User(int virtAddr, int len, char *buffer)
+{
+	if (len < 0)
+		return -1;
+	if (len == 0)
+		return len;
+	int i = 0;
+	int oneChar = 0;
+	do
+	{
+		oneChar = (int)buffer[i];
+		kernel->machine->WriteMem(virtAddr + i, 1, oneChar);
+		i++;
+	} while (i < len && oneChar != 0);
+	return i;
+}
+
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -99,91 +150,25 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 
 			break;
-		// New code from here
-		/*
-		case SC_ReadInt:
-			int input = 0, last = 0, i = 0, j, m;
-			bool pos = true, isInt = true;
-			char c;
-			char* buffer = new char[256];
-
-			DEBUG(dbgSys, "\n SC_ReadInt\n");
-			DEBUG(dbgSys, "Reading an integer from input, please start typing:\n");
-			printf("\n SC_ReadInt\n");
-			printf("Reading an integer from input, please start typing:\n");
-
-			SynchConsoleInput *sci = new SynchConsoleInput(NULL);
-			// Read the input to a buffer.
-			c = sci->GetChar();
-			while(c != '\n' && c != EOF) {
-				buffer[last++] = c;
-				c = sci->GetChar();
-			}
-			buffer[last] = '\0';
-
-			// Preprocess the buffer
-			if (buffer[0] == '-') {
-				pos = false;
-				i = 1;
-			}
-
-			m = i;
-			for (i; i < last; i++) {
-
-				if (buffer[0] < '0' || buffer[0] > '9') {
-					printf("This is not an integer\n");
-					DEBUG(dbgSys, "This is not an integer\n");
-					isInt = false;
-				}
-
-				if (!isInt) {
-					kernel->machine->WriteRegister(2, 0);
-					IncreasePC();
-					delete sci;
-					delete buffer;
-					return;
-				}
-			}
-
-			for (m; m < last; m++) {
-				input = input * 10 + (int)(buffer[m] - '0');
-			}
-
-			if(!pos)
-				input *= -1;
-
-			// Prepare for return
-			DEBUG(dbgSys, "System has read the integer\n");
-			printf("System has read integer: %d\n", input);
-			kernel->machine->WriteRegister(2, input);
-			IncreasePC();
-			delete sci;
-			delete buffer;
-			return;
-			ASSERTNOTREACHED();
-			break;
-		*/
+		// New code starts from here
 		case SC_PrintNum:
 		{
-			printf("\n SC_PrintInt\n");
-			printf("Printing an integer.\n");
-
 			int output = kernel->machine->ReadRegister(4);
 
-			if (output == 0)
+			if (output == 0) // If the integer is 0, simply output 0.
 			{
 				kernel->synchConsoleOut->PutChar('0');
 				IncreasePC();
 				return;
 			}
 
-			if (output < 0)
+			if (output < 0) // If the integer is negative, add a '-' sign
 				kernel->synchConsoleOut->PutChar('-');
-			output = abs(output);
+			output = abs(output); // Make sure the integer is now positive
 			int temp;
 			char *buf = new char[12];
 			int counter = 0;
-			while (output > 0)
+			while (output > 0) // We store the integer starting from the lowest digit
 			{
 				temp = output % 10;
 				output /= 10;
@@ -191,8 +176,7 @@ void ExceptionHandler(ExceptionType which)
 				counter++;
 			}
 			while (counter >= 0)
-				kernel->synchConsoleOut->PutChar((char)buf[--counter]);
-			printf("\n");
+				kernel->synchConsoleOut->PutChar((char)buf[--counter]); // Simply output from the end of the buffer (from the largest digit)
 			IncreasePC();
 			delete buf;
 			return;
@@ -203,8 +187,8 @@ void ExceptionHandler(ExceptionType which)
 		{
 			printf("\n SC_RandomNum\n");
 			printf("Generate a random positive integer\n");
-			srandom(time(NULL));
-			int r = random();
+			srandom(time(NULL)); // Set random seed
+			int r = random(); // Generate a random number
 			kernel->machine->WriteRegister(2, r);
 			IncreasePC();
 			return;
@@ -221,7 +205,7 @@ void ExceptionHandler(ExceptionType which)
 			while (c != '\n')
 			{
 				str[sz++] = c;
-				if (sz > 11)
+				if (sz > 11) // If there are over 11 characters in the input, then it is overflowed
 				{
 					isNum = false;
 					DEBUG(dbgSys, "Integer overflow\n");
@@ -229,14 +213,14 @@ void ExceptionHandler(ExceptionType which)
 				}
 				c = (char)kernel->synchConsoleIn->GetChar();
 			}
-			str[sz] = '\0';
+			str[sz] = '\0'; // Terminating null
 
-			if (str[0] == '-')
-				sta++;
+			if (str[0] == '-') // Check if the user enter a negative integer
+				sta++; // The integer start from index 1
 
 			// check valid all-number string
 			for (int i = sta; i < sz; i++)
-				if (!(str[i] >= '0' && str[i] <= '9'))
+				if (!(str[i] >= '0' && str[i] <= '9')) // If the input contains characters other than numbers, break
 				{
 					isNum = false;
 					break;
@@ -293,7 +277,7 @@ void ExceptionHandler(ExceptionType which)
 		case SC_PrintChar:
 		{
 			char c = (char)kernel->machine->ReadRegister(4);
-			if (c >= '!' && c <= '~') // only considering displayable ASCII characters
+			if (c >= ' ' && c <= '~') // only considering displayable ASCII characters
 			{
 				DEBUG(dbgSys, "Received character \'" << c << "\' as the first parameter.\n");
 				kernel->synchConsoleOut->PutChar(c);
@@ -303,7 +287,7 @@ void ExceptionHandler(ExceptionType which)
 				DEBUG(dbgSys, "Received a non-displayable character as the first parameter\n");
 				kernel->synchConsoleOut->PutChar('\0');
 			}
-			kernel->synchConsoleOut->PutChar('\n');
+			// kernel->synchConsoleOut->PutChar('\n');
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
@@ -311,10 +295,56 @@ void ExceptionHandler(ExceptionType which)
 		break;
 		case SC_ReadString:
 		{
+			int virtualAddr = (int)kernel->machine->ReadRegister(4);
+			int len = (int)kernel->machine->ReadRegister(5);
+			if (len < 0)
+			{
+				DEBUG(dbgSys, "Invalid Parameter!\n");
+			}
+			char* buffer = User2System(virtualAddr, len+1);
+			int pos = 0;
+			char c = (char)kernel->synchConsoleIn->GetChar();
+			while (c != '\n' && c != '\0' && pos < len)
+			{
+				buffer[pos] = c;
+				pos++;
+				c = (char)kernel->synchConsoleIn->GetChar();
+			}
+			buffer[pos] = '\0';
+
+			System2User(virtualAddr, len, buffer);
+
+			delete[] buffer;
+
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
 		}
 		break;
 		case SC_PrintString:
 		{
+			// get string address from r4
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+			// get the string from User memory space to System memory space
+			char *buffer = User2System(strAddr, 255);
+
+			if (buffer != NULL)
+			{
+				int pos = 0;
+				while (buffer[pos] != 0)
+				{
+					kernel->synchConsoleOut->PutChar(buffer[pos]);
+					pos++;
+				}
+				// kernel->synchConsoleOut->PutChar(end);
+			}
+			else {
+				DEBUG(dbgSys, "Error locating the string from user.\n");
+			}
+
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
 		}
 		break;
 		default:
@@ -358,6 +388,7 @@ void ExceptionHandler(ExceptionType which)
 		break;
 	default:
 		cerr << "Unexpected user mode exception" << (int)which << "\n";
+		SysHalt();
 		break;
 	}
 	ASSERTNOTREACHED();

@@ -261,48 +261,40 @@ void ExceptionHandler(ExceptionType which)
 
 	case PageFaultException:
 		printf("\nNo valid translation found.\n");
-		IncreasePC();
 		SysHalt();
 		break;
 
 	case ReadOnlyException:
 		printf("\nWrite attempted to page marked \"read-only\".\n");
-		IncreasePC();
 		SysHalt();
 		break;
 
 	case BusErrorException:
 		printf("\nTranslation resulted in an invalid physical address.\n");
-		IncreasePC();
 		SysHalt();
 		break;
 
 	case AddressErrorException:
 		printf("\nUnaligned reference or one that was beyond the end of the address space.\n");
-		IncreasePC();
 		SysHalt();
 		break;
 
 	case OverflowException:
 		printf("\nInteger overflow in add or sub.\n");
-		IncreasePC();
 		SysHalt();
 		break;
 
 	case IllegalInstrException:
 		printf("\nUnimplemented or reserved instr\n");
-		IncreasePC();
 		SysHalt();
 		break;
 
 	case NumExceptionTypes:
 		printf("\nNumExceptionTypes\n");
-		IncreasePC();
 		SysHalt();
 		break;
 	default:
 		cerr << "Unexpected user mode exception" << (int)which << "\n";
-		IncreasePC();
 		SysHalt();
 		break;
 	}

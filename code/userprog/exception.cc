@@ -99,70 +99,7 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 
 			break;
-		// New code from here
-		/*
-		case SC_ReadInt:
-			int input = 0, last = 0, i = 0, j, m;
-			bool pos = true, isInt = true;
-			char c;
-			char* buffer = new char[256];
-
-			DEBUG(dbgSys, "\n SC_ReadInt\n");
-			DEBUG(dbgSys, "Reading an integer from input, please start typing:\n");
-			printf("\n SC_ReadInt\n");
-			printf("Reading an integer from input, please start typing:\n");
-
-			SynchConsoleInput *sci = new SynchConsoleInput(NULL);
-			// Read the input to a buffer.
-			c = sci->GetChar();
-			while(c != '\n' && c != EOF) {
-				buffer[last++] = c;
-				c = sci->GetChar();
-			}
-			buffer[last] = '\0';
-
-			// Preprocess the buffer
-			if (buffer[0] == '-') {
-				pos = false;
-				i = 1;
-			}
-
-			m = i;
-			for (i; i < last; i++) {
-
-				if (buffer[0] < '0' || buffer[0] > '9') {
-					printf("This is not an integer\n");
-					DEBUG(dbgSys, "This is not an integer\n");
-					isInt = false;
-				}
-
-				if (!isInt) {
-					kernel->machine->WriteRegister(2, 0);
-					IncreasePC();
-					delete sci;
-					delete buffer;
-					return;
-				}
-			}
-
-			for (m; m < last; m++) {
-				input = input * 10 + (int)(buffer[m] - '0');
-			}
-
-			if(!pos)
-				input *= -1;
-
-			// Prepare for return
-			DEBUG(dbgSys, "System has read the integer\n");
-			printf("System has read integer: %d\n", input);
-			kernel->machine->WriteRegister(2, input);
-			IncreasePC();
-			delete sci;
-			delete buffer;
-			return;
-			ASSERTNOTREACHED();
-			break;
-		*/
+		// New code starts from here
 		case SC_PrintNum:
 		{
 			printf("\n SC_PrintInt\n");
@@ -324,40 +261,49 @@ void ExceptionHandler(ExceptionType which)
 
 	case PageFaultException:
 		printf("\nNo valid translation found.\n");
+		IncreasePC();
 		SysHalt();
 		break;
 
 	case ReadOnlyException:
 		printf("\nWrite attempted to page marked \"read-only\".\n");
+		IncreasePC();
 		SysHalt();
 		break;
 
 	case BusErrorException:
 		printf("\nTranslation resulted in an invalid physical address.\n");
+		IncreasePC();
 		SysHalt();
 		break;
 
 	case AddressErrorException:
 		printf("\nUnaligned reference or one that was beyond the end of the address space.\n");
+		IncreasePC();
 		SysHalt();
 		break;
 
 	case OverflowException:
 		printf("\nInteger overflow in add or sub.\n");
+		IncreasePC();
 		SysHalt();
 		break;
 
 	case IllegalInstrException:
 		printf("\nUnimplemented or reserved instr\n");
+		IncreasePC();
 		SysHalt();
 		break;
 
 	case NumExceptionTypes:
 		printf("\nNumExceptionTypes\n");
+		IncreasePC();
 		SysHalt();
 		break;
 	default:
 		cerr << "Unexpected user mode exception" << (int)which << "\n";
+		IncreasePC();
+		SysHalt();
 		break;
 	}
 	ASSERTNOTREACHED();

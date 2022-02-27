@@ -5,7 +5,11 @@
 int main()
 {
     // enter your testing code from here
-    int a = ReadNum();
+    char str[255];
+
+    ReadString(str, 255);
+    PrintString("The string that we read: ");
+    PrintString(str);
     Halt();
     // end of testing code
 }

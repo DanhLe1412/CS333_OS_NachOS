@@ -40,6 +40,57 @@ void IncreasePC()
 	kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
 }
 
+/*
+Input: - User space address (int)
+ - Limit of buffer (int)
+Output:- Buffer (char*)
+Purpose: Copy buffer from User memory space to System memory space
+*/
+char *User2System(int virtAddr, int limit)
+{
+	int i; // index
+	int oneChar;
+	char *kernelBuf = NULL;
+
+	kernelBuf = new char[limit + 1]; // need for terminal string
+	if (kernelBuf == NULL)
+		return kernelBuf;
+	memset(kernelBuf, 0, limit + 1);
+
+	for (i = 0; i < limit; i++)
+	{
+		kernel->machine->ReadMem(virtAddr + i, 1, &oneChar);
+		kernelBuf[i] = (char)oneChar;
+		if (oneChar == 0)
+			break;
+	}
+	return kernelBuf;
+}
+
+/*
+Input: - User space address (int)
+ - Limit of buffer (int)
+ - Buffer (char[])
+Output:- Number of bytes copied (int)
+Purpose: Copy buffer from System memory space to User memory space
+*/
+int System2User(int virtAddr, int len, char *buffer)
+{
+	if (len < 0)
+		return -1;
+	if (len == 0)
+		return len;
+	int i = 0;
+	int oneChar = 0;
+	do
+	{
+		oneChar = (int)buffer[i];
+		kernel->machine->WriteMem(virtAddr + i, 1, oneChar);
+		i++;
+	} while (i < len && oneChar != 0);
+	return i;
+}
+
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -311,10 +362,60 @@ void ExceptionHandler(ExceptionType which)
 		break;
 		case SC_ReadString:
 		{
+			int virtualAddr = (int)kernel->machine->ReadRegister(4);
+			int len = (int)kernel->machine->ReadRegister(5);
+			if (len < 0)
+			{
+				DEBUG(dbgSys, "Invalid Parameter!\n");
+			}
+			char *buffer = new char[len + 1];
+			for (int i = 0; i <= len; i++)
+				buffer[i] = 0;
+
+			int pos = 0;
+			char c = (char)kernel->synchConsoleIn->GetChar();
+			while (c != '\n' && c != '\0' && pos < len)
+			{
+				buffer[pos] = c;
+				pos++;
+				c = (char)kernel->synchConsoleIn->GetChar();
+			}
+			buffer[pos] = '\0';
+
+			System2User(virtualAddr, len, buffer);
+
+			delete[] buffer;
+
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
 		}
 		break;
 		case SC_PrintString:
 		{
+			// get string address from r4
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+
+			// get the string from User memory space to System memory space
+			char *buffer = User2System(strAddr, 255);
+
+			if (buffer != NULL)
+			{
+				int pos = 0;
+				while (buffer[pos] != 0)
+				{
+					kernel->synchConsoleOut->PutChar(buffer[pos]);
+					pos++;
+				}
+				kernel->synchConsoleOut->PutChar('\n');
+			}
+			else {
+				DEBUG(dbgSys, "Error locating the string from user.\n");
+			}
+
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
 		}
 		break;
 		default:

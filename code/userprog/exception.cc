@@ -185,8 +185,6 @@ void ExceptionHandler(ExceptionType which)
 		break;
 		case SC_RandomNum:
 		{
-			printf("\n SC_RandomNum\n");
-			printf("Generate a random positive integer\n");
 			srandom(time(NULL)); // Set random seed
 			int r = random(); // Generate a random number
 			kernel->machine->WriteRegister(2, r);

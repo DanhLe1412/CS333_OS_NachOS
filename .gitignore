@@ -1,0 +1,2 @@
+code/build.linux/*.o
+code/test/*.o

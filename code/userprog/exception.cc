@@ -26,7 +26,9 @@
 #include "syscall.h"
 #include "ksyscall.h"
 #include "synchconsole.h"
+#include "filesys.h"
 #include <stdlib.h>
+#include <string.h>
 
 void IncreasePC()
 {
@@ -186,7 +188,7 @@ void ExceptionHandler(ExceptionType which)
 		case SC_RandomNum:
 		{
 			srandom(time(NULL)); // Set random seed
-			int r = random(); // Generate a random number
+			int r = random();	 // Generate a random number
 			kernel->machine->WriteRegister(2, r);
 			IncreasePC();
 			return;
@@ -214,7 +216,7 @@ void ExceptionHandler(ExceptionType which)
 			str[sz] = '\0'; // Terminating null
 
 			if (str[0] == '-') // Check if the user enter a negative integer
-				sta++; // The integer start from index 1
+				sta++;		   // The integer start from index 1
 
 			// check valid all-number string
 			for (int i = sta; i < sz; i++)
@@ -299,7 +301,7 @@ void ExceptionHandler(ExceptionType which)
 			{
 				DEBUG(dbgSys, "Invalid Parameter!\n");
 			}
-			char* buffer = User2System(virtualAddr, len+1);
+			char *buffer = User2System(virtualAddr, len + 1);
 			int pos = 0;
 			char c = (char)kernel->synchConsoleIn->GetChar();
 			while (c != '\n' && c != '\0' && pos < len)
@@ -336,9 +338,158 @@ void ExceptionHandler(ExceptionType which)
 				}
 				// kernel->synchConsoleOut->PutChar(end);
 			}
-			else {
+			else
+			{
 				DEBUG(dbgSys, "Error locating the string from user.\n");
 			}
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+
+		case SC_Create:
+		{
+			// input: arg1 as the file name address
+			// output: successful: 0, failed: -1
+			// function: create a empty file with given file name from the user.
+			// get string address from r4
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+			// get the string from User memory space to System memory space
+			char *kernelBuffer = User2System(strAddr, 33);
+
+			if (strlen(kernelBuffer) == 0)
+			{
+				DEBUG(dbgSys, "Invalid file name (file name with size 0)!\n");
+				kernel->machine->WriteRegister(2, -1);
+			}
+			else
+			{
+				if (kernelBuffer != NULL)
+				{
+					if (!kernel->fileSystem->Create(kernelBuffer)) // return true if the file is created successfully
+					{
+						DEBUG(dbgSys, "Failed to create file\n");
+						kernel->machine->WriteRegister(2, -1);
+					}
+					else
+						kernel->machine->WriteRegister(2, 0);
+				}
+				else
+				{
+					DEBUG(dbgSys, "Error locating the string from user or not enough memory in the system.\n");
+					kernel->machine->WriteRegister(2, -1);
+				}
+			}
+			delete kernelBuffer;
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+
+		case SC_Open:
+		{
+			// input: arg1(reg4) as the file name address
+			// output: int - the OpenFileId of the file that just got opened, -1 if failed
+			// function: open a file with a given file name from the user, return the OpenFileId of that file
+			// OpenFileId for stdinput: input 0
+			// OpenFileId for stdoutput: output 1
+
+			const char *stdin = "stdin";
+			const char *stdout = "stdout";
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+			// get the string from User memory space to System memory space
+			char *kernelBuffer = User2System(strAddr, 33);
+			int freeSlot = (int)kernel->fileSystem->findFreeSlot();
+
+			DEBUG(dbgSys, "\nAttempt to Open " << kernelBuffer << "$\n");
+			DEBUG(dbgSys, "\nfree slot:  " << freeSlot << "\n");
+
+			// if (strcmp(kernelBuffer, stdin)) // the user's input is "stdin" or "stdout"
+			// 	kernel->machine->WriteRegister(2, 0);
+			// else
+			// {
+			// 	if (strcmp(kernelBuffer, stdout))
+			// 		kernel->machine->WriteRegister(2, 1);
+			// 	else
+			 	{
+					if (freeSlot > 1) // not -1, 0 and 1
+					{
+						if ((kernel->fileSystem->openedFiles[freeSlot] = kernel->fileSystem->Open(kernelBuffer)) != NULL)
+						{
+							kernel->machine->WriteRegister(2, (int)freeSlot);
+							DEBUG(dbgSys, "Open " << kernelBuffer << " successfully!\n");
+						}
+						else
+						{
+							kernel->machine->WriteRegister(2, (int)-1);
+							DEBUG(dbgSys, "Failed to open " << kernelBuffer << "!\n");
+						}
+					}
+					else
+					{
+						DEBUG(dbgSys, "Too much file is opened right now!\n");
+						kernel->machine->WriteRegister(2, (int)-1);
+					}
+				}
+		//}
+			delete[] kernelBuffer;
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+
+		case SC_Close:
+		{
+			// input: arg1(reg4) as the OpenFileId of the file that needs to be closed.
+			// output: 0 if successful, -1 if failed
+			// function: close a file with the specific OpenFileId
+			// OpenFileId for stdinput: input 0
+			// OpenFileId for stdoutput: output 1
+
+			int fileID = (int)kernel->machine->ReadRegister(4);
+
+			if (fileID >= 0 && fileID <= 14) // in the right range of value
+			{
+				if (kernel->fileSystem->openedFiles[fileID])
+				{
+					DEBUG(dbgSys, "\nfree slot:  " << fileID << "\n");
+					delete kernel->fileSystem->openedFiles[fileID];
+					kernel->fileSystem->openedFiles[fileID] = NULL;
+					DEBUG(dbgSys, "File closed successfully\n");
+					kernel->machine->WriteRegister(2, (int)0);
+				}
+				else
+				{
+					DEBUG(dbgSys, "The file with the given ID is already closed.\n");
+					kernel->machine->WriteRegister(2, (int)-1);
+				}
+			}
+			else
+			{
+				DEBUG(dbgSys, "Invalid file ID.\n");
+				kernel->machine->WriteRegister(2, (int)-1);
+			}
+
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+
+		case SC_Read:
+		{
+
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+
+		case SC_Write:
+		{
 
 			IncreasePC();
 			return;

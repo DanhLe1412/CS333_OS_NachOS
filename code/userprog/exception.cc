@@ -432,8 +432,8 @@ void ExceptionHandler(ExceptionType which)
 					DEBUG(dbgSys, "Too much file is opened right now!\n");
 					kernel->machine->WriteRegister(2, (int)-1);
 				}
+				//}
 			}
-			//}
 			delete[] kernelBuffer;
 			IncreasePC();
 			return;
@@ -479,18 +479,158 @@ void ExceptionHandler(ExceptionType which)
 		}
 		break;
 
-		case SC_Read:
+		case SC_Write:
 		{
+			// input: arg1(reg4) - string buffer from user-space, arg2(reg5) - the length of that string, arg3(reg6) integer index of an opened file.
+			// output: success: the number of bytes written, failure: -1
+			// function: write content into a file
 
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+			int strLen = (int)kernel->machine->ReadRegister(5);
+			int fileID = (int)kernel->machine->ReadRegister(6);
+			char *kernelBuffer;
+			bool checked = false;
+			int bytesWritten;
+
+			if (fileID < 0 || fileID > 14)
+			{
+				DEBUG(dbgSys, "Out of range: file ID.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && kernel->fileSystem->openedFiles[fileID] == NULL)
+			{
+				DEBUG(dbgSys, "The file ID does not exist.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && fileID == 0) // stdin
+			{
+				DEBUG(dbgSys, "Can't write to stdin\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (checked)
+			{
+				IncreasePC();
+				return;
+			}
+
+			kernelBuffer = User2System(strAddr, strLen);
+
+			if (fileID == 1) // stdout - write to stdout
+			{
+				int rs = 0;
+				if (kernelBuffer != NULL)
+				{
+					while (kernelBuffer[rs] != 0 && kernelBuffer[rs] != '\n')
+					{
+						kernel->synchConsoleOut->PutChar(kernelBuffer[rs]);
+						rs++;
+					}
+					kernel->synchConsoleOut->PutChar('\n');
+				}
+				kernel->machine->WriteRegister(2, rs - 1);
+				DEBUG(dbgSys, "Wrote to stdout successfully!\n");
+			}
+			else // write to an opened file
+			{
+				bytesWritten = kernel->fileSystem->openedFiles[fileID]->Write(kernelBuffer, strLen);
+				if (bytesWritten >= 0)
+				{
+					kernel->machine->WriteRegister(2, bytesWritten);
+					DEBUG(dbgSys, "Wrote to file successfully!\n");
+				}
+				else
+				{
+					kernel->machine->WriteRegister(2, -1);
+					DEBUG(dbgSys, "Failed to write to file.\n");
+				}
+			}
+			delete[] kernelBuffer;
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
 		}
 		break;
 
-		case SC_Write:
+		case SC_Read:
 		{
+			// input: arg1(reg4) - string buffer from user-space, arg2(reg5) - size of the content the the user wants to read from the opened file, arg3(reg6) - integer index of the opended file
+			// output: the number of bytes read, can be less than the required size. Larger than 1 for I/O device.
+			// function: read a string of character from a file.
 
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+			int strLen = (int)kernel->machine->ReadRegister(5);
+			int fileID = (int)kernel->machine->ReadRegister(6);
+			char *kernelBuffer;
+			bool checked = false;
+			int bytesRead;
+
+			if (fileID < 0 || fileID > 14)
+			{
+				DEBUG(dbgSys, "Out of range: file ID.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && kernel->fileSystem->openedFiles[fileID] == NULL)
+			{
+				DEBUG(dbgSys, "The file ID does not exist.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && fileID == 1) // stdout
+			{
+				DEBUG(dbgSys, "Can't read from stdout\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (checked)
+			{
+				IncreasePC();
+				return;
+			}
+
+			kernelBuffer = User2System(strAddr, strLen);
+
+			if (fileID == 0) // read from the stdin
+			{
+				int rs = 0;
+				char c = (char)kernel->synchConsoleIn->GetChar();
+				while (c != '\n' && c != '\0' && rs < strLen)
+				{
+					kernelBuffer[rs] = c;
+					rs++;
+					c = (char)kernel->synchConsoleIn->GetChar();
+				}
+				kernelBuffer[rs] = '\0';
+				System2User(strAddr, rs, kernelBuffer);
+				kernel->machine->WriteRegister(2, rs);
+				DEBUG(dbgSys, "Read from stdin successfully!\n");
+			}
+			else // read from an opened file
+			{
+				bytesRead = kernel->fileSystem->openedFiles[fileID]->Read(kernelBuffer, strLen);
+				if (bytesRead >= 0)
+				{
+					System2User(strAddr, bytesRead, kernelBuffer);
+					kernel->machine->WriteRegister(2, bytesRead);
+					DEBUG(dbgSys, "Read from file successfully!\n");
+				}
+				else
+				{
+					kernel->machine->WriteRegister(2, -1);
+					DEBUG(dbgSys, "Failed to read from file.\n");
+				}
+			}
+
+			delete[] kernelBuffer;
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
@@ -525,7 +665,7 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 		}
 		break;
-		
+
 		case SC_Remove:
 		{
 			int virtualAddr = (int)kernel->machine->ReadRegister(4);

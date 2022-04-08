@@ -58,6 +58,11 @@ class OpenFile {
 
 	int Length() { Lseek(file, 0, 2); return Tell(file); }
     
+	int getCurPos(){
+		currentOffset = Tell(file);
+		return currentOffset;
+	}
+
   private:
     int file;
     int currentOffset;
@@ -91,6 +96,10 @@ class OpenFile {
 					// than the UNIX idiom -- lseek to 
 					// end of file, tell, lseek back 
     
+	int getCurPos(){
+		return seekPosition;
+	}
+
   private:
     FileHeader *hdr;			// Header for this file 
     int seekPosition;			// Current position within the file

@@ -44,24 +44,10 @@ int main()
         PrintString("Failed to create file!\n");
 
     fileID1 = Open(str);
-    PrintNum(fileID1);
-    PrintString("\n");
-
-    PrintString("Filename: ");
-
-    ReadString(str, 33);
-    state = Create(str);
-    if(state >= 0)
-        PrintString("File created successfully!\n");
-    else
-        PrintString("Failed to create file!\n");
-
-    fileID2 = Open(anotherName);
-    PrintNum(fileID2);
-    PrintString("\n");
 
     Close(fileID1);
-    Close(fileID2);
+
+    Remove(str);
 
     Halt();
     // end of testing code

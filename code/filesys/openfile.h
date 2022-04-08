@@ -52,7 +52,11 @@ class OpenFile {
 		return numWritten;
 		}
 
-    int Length() { Lseek(file, 0, 2); return Tell(file); }
+	void Seek(int position){
+		currentOffset = position;
+	}
+
+	int Length() { Lseek(file, 0, 2); return Tell(file); }
     
   private:
     int file;

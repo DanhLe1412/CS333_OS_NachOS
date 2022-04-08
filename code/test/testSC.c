@@ -4,10 +4,10 @@
 
 int main()
 {
-    int a, b, state, fileID1, fileID2;
+    int a, b, state, fileID1, fileID2, written, read;
     char c;
-    char str[255];
-    char anotherName[] = "sa.txt";
+    char str[255], str2[255];
+    char anotherName[] = "Hello everyone!";
 
     // enter your testing code from here
     // PrintString("Enter a number: ");
@@ -38,30 +38,27 @@ int main()
 
     ReadString(str, 33);
     state = Create(str);
-    if(state >= 0)
+    if (state >= 0)
         PrintString("File created successfully!\n");
     else
         PrintString("Failed to create file!\n");
 
     fileID1 = Open(str);
-    PrintNum(fileID1);
+
+    written = Write(anotherName, 29, fileID1);
+
+    Seek(0, fileID1);
+
+    read = Read(str2, 29, fileID1);
+
+    PrintString(str2);
     PrintString("\n");
-
-    PrintString("Filename: ");
-
-    ReadString(str, 33);
-    state = Create(str);
-    if(state >= 0)
-        PrintString("File created successfully!\n");
-    else
-        PrintString("Failed to create file!\n");
-
-    fileID2 = Open(anotherName);
-    PrintNum(fileID2);
+    PrintNum(read);
     PrintString("\n");
 
     Close(fileID1);
-    Close(fileID2);
+
+    // Remove(str);
 
     Halt();
     // end of testing code

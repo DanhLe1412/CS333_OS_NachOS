@@ -413,27 +413,27 @@ void ExceptionHandler(ExceptionType which)
 			// 	if (strcmp(kernelBuffer, stdout))
 			// 		kernel->machine->WriteRegister(2, 1);
 			// 	else
-			 	{
-					if (freeSlot > 1) // not -1, 0 and 1
+			{
+				if (freeSlot > 1) // not -1, 0 and 1
+				{
+					if ((kernel->fileSystem->openedFiles[freeSlot] = kernel->fileSystem->Open(kernelBuffer)) != NULL)
 					{
-						if ((kernel->fileSystem->openedFiles[freeSlot] = kernel->fileSystem->Open(kernelBuffer)) != NULL)
-						{
-							kernel->machine->WriteRegister(2, (int)freeSlot);
-							DEBUG(dbgSys, "Open " << kernelBuffer << " successfully!\n");
-						}
-						else
-						{
-							kernel->machine->WriteRegister(2, (int)-1);
-							DEBUG(dbgSys, "Failed to open " << kernelBuffer << "!\n");
-						}
+						kernel->machine->WriteRegister(2, (int)freeSlot);
+						DEBUG(dbgSys, "Open " << kernelBuffer << " successfully!\n");
 					}
 					else
 					{
-						DEBUG(dbgSys, "Too much file is opened right now!\n");
 						kernel->machine->WriteRegister(2, (int)-1);
+						DEBUG(dbgSys, "Failed to open " << kernelBuffer << "!\n");
 					}
 				}
-		//}
+				else
+				{
+					DEBUG(dbgSys, "Too much file is opened right now!\n");
+					kernel->machine->WriteRegister(2, (int)-1);
+				}
+				//}
+			}
 			delete[] kernelBuffer;
 			IncreasePC();
 			return;
@@ -479,23 +479,227 @@ void ExceptionHandler(ExceptionType which)
 		}
 		break;
 
-		case SC_Read:
-		{
-
-			IncreasePC();
-			return;
-			ASSERTNOTREACHED();
-		}
-		break;
-
 		case SC_Write:
 		{
+			// input: arg1(reg4) - string buffer from user-space, arg2(reg5) - the length of that string, arg3(reg6) integer index of an opened file.
+			// output: success: the number of bytes written, failure: -1
+			// function: write content into a file
+
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+			int strLen = (int)kernel->machine->ReadRegister(5);
+			int fileID = (int)kernel->machine->ReadRegister(6);
+			char *kernelBuffer;
+			bool checked = false;
+			int bytesWritten;
+
+			if (fileID < 0 || fileID > 14)
+			{
+				DEBUG(dbgSys, "Out of range: file ID.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && kernel->fileSystem->openedFiles[fileID] == NULL)
+			{
+				DEBUG(dbgSys, "The file ID does not exist.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && fileID == 0) // stdin
+			{
+				DEBUG(dbgSys, "Can't write to stdin\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (checked)
+			{
+				IncreasePC();
+				return;
+			}
+
+			kernelBuffer = User2System(strAddr, strLen);
+
+			if (fileID == 1) // stdout - write to stdout
+			{
+				int rs = 0;
+				if (kernelBuffer != NULL)
+				{
+					while (kernelBuffer[rs] != 0 && kernelBuffer[rs] != '\n')
+					{
+						kernel->synchConsoleOut->PutChar(kernelBuffer[rs]);
+						rs++;
+					}
+					kernel->synchConsoleOut->PutChar('\n');
+				}
+				kernel->machine->WriteRegister(2, rs - 1);
+				DEBUG(dbgSys, "Wrote to stdout successfully!\n");
+			}
+			else // write to an opened file
+			{
+				bytesWritten = kernel->fileSystem->openedFiles[fileID]->Write(kernelBuffer, strLen);
+				if (bytesWritten >= 0)
+				{
+					kernel->machine->WriteRegister(2, bytesWritten);
+					DEBUG(dbgSys, "Wrote to file successfully!\n");
+				}
+				else
+				{
+					kernel->machine->WriteRegister(2, -1);
+					DEBUG(dbgSys, "Failed to write to file.\n");
+				}
+			}
+			delete[] kernelBuffer;
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+
+		case SC_Read:
+		{
+			// input: arg1(reg4) - string buffer from user-space, arg2(reg5) - size of the content the the user wants to read from the opened file, arg3(reg6) - integer index of the opended file
+			// output: the number of bytes read, can be less than the required size. Larger than 1 for I/O device.
+			// function: read a string of character from a file.
+
+			int strAddr = (int)kernel->machine->ReadRegister(4);
+			int strLen = (int)kernel->machine->ReadRegister(5);
+			int fileID = (int)kernel->machine->ReadRegister(6);
+			char *kernelBuffer;
+			bool checked = false;
+			int bytesRead;
+
+			if (fileID < 0 || fileID > 14)
+			{
+				DEBUG(dbgSys, "Out of range: file ID.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && kernel->fileSystem->openedFiles[fileID] == NULL)
+			{
+				DEBUG(dbgSys, "The file ID does not exist.\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (!checked && fileID == 1) // stdout
+			{
+				DEBUG(dbgSys, "Can't read from stdout\n");
+				kernel->machine->WriteRegister(2, -1);
+				checked = true;
+			}
+
+			if (checked)
+			{
+				IncreasePC();
+				return;
+			}
+
+			kernelBuffer = User2System(strAddr, strLen);
+
+			if (fileID == 0) // read from the stdin
+			{
+				int rs = 0;
+				char c = (char)kernel->synchConsoleIn->GetChar();
+				while (c != '\n' && c != '\0' && rs < strLen)
+				{
+					kernelBuffer[rs] = c;
+					rs++;
+					c = (char)kernel->synchConsoleIn->GetChar();
+				}
+				kernelBuffer[rs] = '\0';
+				System2User(strAddr, rs, kernelBuffer);
+				kernel->machine->WriteRegister(2, rs);
+				DEBUG(dbgSys, "Read from stdin successfully!\n");
+			}
+			else // read from an opened file
+			{
+				bytesRead = kernel->fileSystem->openedFiles[fileID]->Read(kernelBuffer, strLen);
+				if (bytesRead >= 0)
+				{
+					System2User(strAddr, bytesRead, kernelBuffer);
+					kernel->machine->WriteRegister(2, bytesRead);
+					DEBUG(dbgSys, "Read from file successfully!\n");
+				}
+				else
+				{
+					kernel->machine->WriteRegister(2, -1);
+					DEBUG(dbgSys, "Failed to read from file.\n");
+				}
+			}
+
+			delete[] kernelBuffer;
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
+		break;
+
+		case SC_Seek:
+		{
+			int position = kernel->machine->ReadRegister(4);
+			OpenFileId id = kernel->machine->ReadRegister(5);
+
+			// Assuming there is a function call openf with a length of sector size of 16
+
+			if (position < 0 || id == 0 || id == 1 || id < 0 || id > 14 ||
+				kernel->fileSystem->openedFiles[id] == NULL)
+			{
+				kernel->machine->WriteRegister(2, -1);
+				IncreasePC();
+				return;
+			}
+
+			if (position == -1)
+			{
+				position = kernel->fileSystem->openedFiles[id]->Length();
+			}
+
+			kernel->fileSystem->openedFiles[id]->Seek(position);
+			kernel->machine->WriteRegister(2, position);
 
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();
 		}
 		break;
+
+		case SC_Remove:
+		{
+			int virtualAddr = (int)kernel->machine->ReadRegister(4);
+			char *filename;
+			filename = User2System(virtualAddr, 256);
+
+			if (filename == NULL || strlen(filename) < 0)
+			{
+				DEBUG(dbgSys, "Invalid file name.");
+				kernel->machine->WriteRegister(2, -1);
+				IncreasePC();
+				return;
+			}
+
+			// int freeSlot = kernel->fileSystem->findFreeSlot();
+
+			// Need to check if the file is opening
+
+			if (kernel->fileSystem->Remove(filename))
+			{
+				DEBUG(dbgSys, "Succesfully removed.");
+				kernel->machine->WriteRegister(2, 1);
+			}
+			else
+			{
+				DEBUG(dbgSys, "Failed to remove.");
+				kernel->machine->WriteRegister(2, -1);
+			}
+
+			delete[] filename;
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
+		}
 		default:
 			cerr << "Unexpected system call " << type << "\n";
 			break;

@@ -645,10 +645,10 @@ void ExceptionHandler(ExceptionType which)
 
 			// Assuming there is a function call openf with a length of sector size of 16
 
-			if (position < 0 || id == 0 || id == 1 || id < 0 || id > 14 ||
-				kernel->fileSystem->openedFiles[id] == NULL)
+			if (position < -1 || id < 2 || id > 16 || kernel->fileSystem->openedFiles[id] == NULL)
 			{
 				kernel->machine->WriteRegister(2, -1);
+				DEBUG(dbgSys, "position < 0 || id < 2 || id > 16 .\n");
 				IncreasePC();
 				return;
 			}
@@ -656,10 +656,20 @@ void ExceptionHandler(ExceptionType which)
 			if (position == -1)
 			{
 				position = kernel->fileSystem->openedFiles[id]->Length();
+				DEBUG(dbgSys, "position == -1.\n");
 			}
 
-			kernel->fileSystem->openedFiles[id]->Seek(position);
-			kernel->machine->WriteRegister(2, position);
+			if (position > kernel->fileSystem->openedFiles[id]->Length() || position < 0)
+			{
+				kernel->machine->WriteRegister(2, -1);
+				DEBUG(dbgSys, "position > kernel->fileSystem->openedFiles[id]->Length().\n");
+			}
+			else
+			{
+				kernel->fileSystem->openedFiles[id]->Seek(position);
+				kernel->machine->WriteRegister(2, position);
+				DEBUG(dbgSys, "mental breakdown.\n");
+			}
 
 			IncreasePC();
 			return;

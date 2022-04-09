@@ -1,12 +1,12 @@
 #include "syscall.h"
 
-#define MAXSIZE 32
+#define MAXSIZE 33
 int main()
 {
     char c;
-    char filename_src1[255];
-    char filename_src2[255];
-    char filename_dst[255];
+    char filename_src1[34];
+    char filename_src2[34];
+    char filename_dst[34];
     char buffer[500];
     int filenameLength;
     int fileid;
@@ -20,7 +20,6 @@ int main()
     ReadString(filename_src2, MAXSIZE);
     PrintString("Input dst: ");
     ReadString(filename_dst, MAXSIZE);
-
     fileid = Open(filename_src1);
     if (fileid == -1)
     {
@@ -38,7 +37,6 @@ int main()
         Read(&c, 1, fileid);
         buffer[i] = c;
     }
-
     Close(fileid);
 
     fileid = Open(filename_src2);

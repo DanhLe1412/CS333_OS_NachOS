@@ -5,6 +5,7 @@
 int main()
 {
     int a, b, state, fileID1, fileID2, written, read;
+    int filesize;
     char c;
     char str[255], str2[255];
     char anotherName[] = "Hello everyone!";
@@ -47,8 +48,11 @@ int main()
 
     written = Write(anotherName, 29, fileID1);
 
-    Seek(0, fileID1);
+    filesize = Seek(-1, fileID1);
+    PrintNum(filesize);
+    written = Write(anotherName, 29, fileID1);
 
+    Seek(0, fileID1);
     read = Read(str2, 29, fileID1);
 
     PrintString(str2);

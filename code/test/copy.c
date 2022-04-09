@@ -1,5 +1,5 @@
 #include "syscall.h"
-#define MAX_LENGTH 32
+#define MAX_LENGTH 33
 
 int main(){
     int srcFileID;
@@ -24,7 +24,7 @@ int main(){
         destFileID = Open(dest);
         if (destFileID != -1){
             fileSize = Seek(-1, srcFileID);
-			
+            PrintNum(fileSize);
 
 			Seek(0, srcFileID); 
 			Seek(0, destFileID); 

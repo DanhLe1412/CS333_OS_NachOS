@@ -657,10 +657,15 @@ void ExceptionHandler(ExceptionType which)
 			{
 				position = kernel->fileSystem->openedFiles[id]->Length();
 			}
-
-			kernel->fileSystem->openedFiles[id]->Seek(position);
-			kernel->machine->WriteRegister(2, position);
-
+			if (position > kernel->fileSystem->openf[id]->Length() || position < 0)
+        		{
+            			kernel->machine->WriteRegister(2, -1);
+        		}
+        		else
+        		{
+            			kernel->fileSystem->openf[id]->Seek(position);
+		    		kernel->machine->WriteRegister(2, position);
+        		}
 			IncreasePC();
 			return;
 			ASSERTNOTREACHED();

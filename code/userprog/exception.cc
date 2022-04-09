@@ -520,6 +520,7 @@ void ExceptionHandler(ExceptionType which)
 			}
 
 			kernelBuffer = User2System(strAddr, strLen);
+			strLen = min(strLen, (int)strlen(kernelBuffer));
 
 			if (fileID == 1) // stdout - write to stdout
 			{

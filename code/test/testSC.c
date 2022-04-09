@@ -47,13 +47,15 @@ int main()
 
     written = Write(anotherName, 29, fileID1);
 
+    Seek(3, fileID1);
+
+    written = Write(anotherName, 29, fileID1);
+
     Seek(0, fileID1);
 
-    read = Read(str2, 29, fileID1);
+    read = Read(str2, 35, fileID1);
 
     PrintString(str2);
-    PrintString("\n");
-    PrintNum(read);
     PrintString("\n");
 
     Close(fileID1);

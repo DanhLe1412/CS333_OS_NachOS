@@ -666,10 +666,9 @@ void ExceptionHandler(ExceptionType which)
 			    	kernel->fileSystem->openf[id]->Seek(position);
 				kernel->machine->WriteRegister(2, position);
 			}
-				IncreasePC();
-				return;
-				ASSERTNOTREACHED();
-			}
+			IncreasePC();
+			return;
+			ASSERTNOTREACHED();
 		}
 		break;
 

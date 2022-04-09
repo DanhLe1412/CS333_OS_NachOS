@@ -644,8 +644,8 @@ void ExceptionHandler(ExceptionType which)
 
 			// Assuming there is a function call openf with a length of sector size of 16
 
-			if (position < 0 || id == 0 || id == 1 || id < 0 || id > 14 ||
-				kernel->fileSystem->openedFiles[id] == NULL)
+			if (position < 0 || id == 0 || id == 1 || id < 0 || id > 16 || \
+				kernel->fileSystem->openf[id] == NULL)
 			{
 				kernel->machine->WriteRegister(2, -1);
 				IncreasePC();
@@ -654,15 +654,22 @@ void ExceptionHandler(ExceptionType which)
 
 			if (position == -1)
 			{
-				position = kernel->fileSystem->openedFiles[id]->Length();
+				position = kernel->fileSystem->openf[id]->Length();
 			}
 
-			kernel->fileSystem->openedFiles[id]->Seek(position);
-			kernel->machine->WriteRegister(2, position);
-
-			IncreasePC();
-			return;
-			ASSERTNOTREACHED();
+			if (position > kernel->fileSystem->openf[id]->Length() || position < 0)
+			{
+			    	kernel->machine->WriteRegister(2, -1);
+			}
+			else
+			{
+			    	kernel->fileSystem->openf[id]->Seek(position);
+				kernel->machine->WriteRegister(2, position);
+			}
+				IncreasePC();
+				return;
+				ASSERTNOTREACHED();
+			}
 		}
 		break;
 

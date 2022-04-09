@@ -1,2 +1,5 @@
 code/build.linux/*.o
 code/test/*.o
+code/.vscode/
+code/build.linux/Makefile.dep
+code/build.linux/nachos

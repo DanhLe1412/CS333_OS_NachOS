@@ -659,6 +659,7 @@ void ExceptionHandler(ExceptionType which)
 				DEBUG(dbgSys, "position == -1.\n");
 			}
 
+
 			if (position > kernel->fileSystem->openedFiles[id]->Length() || position < 0)
 			{
 				kernel->machine->WriteRegister(2, -1);
@@ -670,6 +671,7 @@ void ExceptionHandler(ExceptionType which)
 				kernel->machine->WriteRegister(2, position);
 				DEBUG(dbgSys, "mental breakdown.\n");
 			}
+
 
 			IncreasePC();
 			return;
